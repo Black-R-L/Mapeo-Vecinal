@@ -1,0 +1,45 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.backup
+.env.*.php
+
+# Dependencies
+vendor/
+composer.lock
+node_modules/
+package-lock.json
+
+# Compiled
+writable/cache/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+!writable/cache/.gitkeep
+!writable/logs/.gitkeep
+!writable/session/.gitkeep
+!writable/uploads/.gitkeep
+
+# Build artifacts
+public/hot
+public/storage
+storage/logs/
+
+# Test artifacts
+.phpunit.result.cache
+coverage/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Application
+app/Config/Database.php
+uploads/
