@@ -22,10 +22,12 @@ writable/cache/*
 writable/logs/*
 writable/session/*
 writable/uploads/*
+writable/debugbar/*
 !writable/cache/.gitkeep
 !writable/logs/.gitkeep
 !writable/session/.gitkeep
 !writable/uploads/.gitkeep
+!writable/debugbar/.gitkeep
 
 # Build artifacts
 public/hot

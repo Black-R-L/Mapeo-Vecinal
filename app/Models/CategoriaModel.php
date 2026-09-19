@@ -21,6 +21,9 @@ class CategoriaModel extends Model
     protected $allowedFields    = ['nombre', 'icono', 'color', 'descripcion'];
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';
+    // La tabla no tiene columna updated_at: dejarlo en el valor por defecto
+    // rompía insert()/update() con "Unknown column 'updated_at' in field list".
+    protected $updatedField     = '';
 
     protected $validationRules  = [
         'nombre'      => 'required|string|min_length[3]|max_length[50]|is_unique[categorias.nombre]',

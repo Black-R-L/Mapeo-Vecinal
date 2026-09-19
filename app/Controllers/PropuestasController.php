@@ -3,17 +3,16 @@
 namespace App\Controllers;
 
 use App\Models\PropuestaModel;
-use CodeIgniter\Controller;
 
 /**
  * PropuestasController
- * 
+ *
  * Maneja CRUD de propuestas de mejoras
  * Usuarios pueden crear y votar en propuestas
- * 
+ *
  * @package App\Controllers
  */
-class PropuestasController extends Controller
+class PropuestasController extends BaseApiController
 {
     protected $propuestaModel;
     protected $helpers = ['form'];
@@ -25,350 +24,204 @@ class PropuestasController extends Controller
 
     /**
      * Listar propuestas con paginación
-     * GET /propuestas
+     * GET /api/propuestas
      */
     public function index()
     {
-        try {
+        return $this->attempt(function () {
             $page = $this->request->getVar('page') ?? 1;
             $perPage = $this->request->getVar('perPage') ?? 10;
             $estado = $this->request->getVar('estado') ?? '';
 
-            $propuestas = $this->propuestaModel->getPropuestasConDetalles($perPage, $page, $estado);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $propuestas,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->propuestaModel->getPropuestasConDetalles((int) $perPage, (int) $page, (string) $estado));
+        });
     }
 
     /**
      * Obtener propuesta por ID
-     * GET /propuestas/{id}
+     * GET /api/propuestas/{id}
      */
     public function obtener($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
             $propuesta = $this->propuestaModel->select('propuestas.*, usuarios.nombre, usuarios.email, categorias.nombre as categoria_nombre')
-                                              ->join('usuarios', 'usuarios.id = propuestas.user_id')
-                                              ->join('categorias', 'categorias.id = propuestas.categoria_id')
-                                              ->where('propuestas.id', $id)
-                                              ->first();
+                ->join('usuarios', 'usuarios.id = propuestas.user_id')
+                ->join('categorias', 'categorias.id = propuestas.categoria_id')
+                ->where('propuestas.id', $id)
+                ->first();
 
-            if (!$propuesta) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Propuesta no encontrada',
-                ])->setStatusCode(404);
+            if (! $propuesta) {
+                return $this->fail('Propuesta no encontrada', 404);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $propuesta,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($propuesta);
+        });
     }
 
     /**
      * Crear nueva propuesta
-     * POST /propuestas
+     * POST /api/propuestas
      */
     public function crear()
     {
-        try {
+        return $this->attempt(function () {
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!$this->propuestaModel->validate($data)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Validación fallida',
-                    'errors' => $this->propuestaModel->errors(),
-                ])->setStatusCode(422);
+            if (! $this->propuestaModel->validate($data)) {
+                return $this->fail('Validación fallida', 422, $this->propuestaModel->errors());
             }
 
             if ($this->propuestaModel->insert($data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Propuesta creada exitosamente',
-                ])->setStatusCode(201);
+                return $this->ok(null, 'Propuesta creada exitosamente', 201);
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al crear propuesta',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al crear propuesta', 500);
+        });
     }
 
     /**
      * Actualizar propuesta
-     * PUT /propuestas/{id}
+     * PUT /api/propuestas/{id}
      */
     public function actualizar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->propuestaModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Propuesta no encontrada',
-                ])->setStatusCode(404);
+            if (! $this->propuestaModel->find($id)) {
+                return $this->fail('Propuesta no encontrada', 404);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
             if ($this->propuestaModel->update($id, $data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Propuesta actualizada exitosamente',
-                ]);
+                return $this->ok(null, 'Propuesta actualizada exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al actualizar propuesta',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al actualizar propuesta', 500);
+        });
     }
 
     /**
      * Cambiar estado de propuesta
-     * PATCH /propuestas/{id}/estado
+     * PATCH /api/propuestas/{id}/estado
      */
     public function cambiarEstado($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!isset($data['estado'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Estado requerido',
-                ])->setStatusCode(400);
+            if (! isset($data['estado'])) {
+                return $this->fail('Estado requerido', 400);
             }
 
-            if ($this->propuestaModel->cambiarEstado($id, $data['estado'])) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Estado actualizado exitosamente',
-                ]);
+            if ($this->propuestaModel->cambiarEstado((int) $id, $data['estado'])) {
+                return $this->ok(null, 'Estado actualizado exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al cambiar estado',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al cambiar estado', 500);
+        });
     }
 
     /**
      * Activar votación para propuesta
-     * PATCH /propuestas/{id}/activar-votacion
+     * PATCH /api/propuestas/{id}/activar-votacion
      */
     public function activarVotacion($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if ($this->propuestaModel->activarVotacion($id)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Votación activada exitosamente',
-                ]);
+            if ($this->propuestaModel->activarVotacion((int) $id)) {
+                return $this->ok(null, 'Votación activada exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al activar votación',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al activar votación', 500);
+        });
     }
 
     /**
      * Eliminar propuesta (soft delete)
-     * DELETE /propuestas/{id}
+     * DELETE /api/propuestas/{id}
      */
     public function eliminar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->propuestaModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Propuesta no encontrada',
-                ])->setStatusCode(404);
+            if (! $this->propuestaModel->find($id)) {
+                return $this->fail('Propuesta no encontrada', 404);
             }
 
             if ($this->propuestaModel->delete($id)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Propuesta eliminada exitosamente',
-                ]);
+                return $this->ok(null, 'Propuesta eliminada exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al eliminar propuesta',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al eliminar propuesta', 500);
+        });
     }
 
     /**
      * Obtener propuestas en votación
-     * GET /propuestas/votacion
+     * GET /api/propuestas/votacion
      */
     public function enVotacion()
     {
-        try {
+        return $this->attempt(function () {
             $perPage = $this->request->getVar('perPage') ?? 10;
-            $propuestas = $this->propuestaModel->getEnVotacion($perPage);
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $propuestas,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->propuestaModel->getEnVotacion((int) $perPage));
+        });
     }
 
     /**
      * Obtener propuestas más votadas
-     * GET /propuestas/populares/{limit}
+     * GET /api/propuestas/populares/{limit}
      */
     public function populares($limit = 10)
     {
-        try {
-            $propuestas = $this->propuestaModel->getMasVotadas((int)$limit);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $propuestas,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () use ($limit) {
+            return $this->ok($this->propuestaModel->getMasVotadas((int) $limit));
+        });
     }
 
     /**
      * Obtener propuestas por usuario
-     * GET /propuestas/usuario/{userId}
+     * GET /api/propuestas/usuario/{userId}
      */
     public function porUsuario($userId = null)
     {
-        try {
-            if (!$userId) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($userId) {
+            if (! $userId) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
-            $propuestas = $this->propuestaModel->getPropuestasPorUsuario($userId);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $propuestas,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->propuestaModel->getPropuestasPorUsuario((int) $userId));
+        });
     }
 
     /**
      * Obtener estadísticas de propuestas
-     * GET /propuestas/estadisticas
+     * GET /api/propuestas/estadisticas
      */
     public function estadisticas()
     {
-        try {
-            $stats = $this->propuestaModel->getEstadisticas();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $stats,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () {
+            return $this->ok($this->propuestaModel->getEstadisticas());
+        });
     }
 }

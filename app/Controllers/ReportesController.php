@@ -3,17 +3,16 @@
 namespace App\Controllers;
 
 use App\Models\ReporteModel;
-use CodeIgniter\Controller;
 
 /**
  * ReportesController
- * 
+ *
  * Maneja CRUD de reportes de problemas
  * Cualquier usuario autenticado puede crear reportes
- * 
+ *
  * @package App\Controllers
  */
-class ReportesController extends Controller
+class ReportesController extends BaseApiController
 {
     protected $reporteModel;
     protected $helpers = ['form'];
@@ -25,348 +24,203 @@ class ReportesController extends Controller
 
     /**
      * Listar reportes con paginación y filtros
-     * GET /reportes
+     * GET /api/reportes
      */
     public function index()
     {
-        try {
+        return $this->attempt(function () {
             $page = $this->request->getVar('page') ?? 1;
             $perPage = $this->request->getVar('perPage') ?? 10;
             $estado = $this->request->getVar('estado') ?? '';
 
-            $reportes = $this->reporteModel->getReportesConDetalles($perPage, $page, $estado);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reportes,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->reporteModel->getReportesConDetalles((int) $perPage, (int) $page, (string) $estado));
+        });
     }
 
     /**
      * Obtener reporte por ID
-     * GET /reportes/{id}
+     * GET /api/reportes/{id}
      */
     public function obtener($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
             $reporte = $this->reporteModel->select('reportes.*, usuarios.nombre, usuarios.email, usuarios.barrio, categorias.nombre as categoria_nombre')
-                                          ->join('usuarios', 'usuarios.id = reportes.user_id')
-                                          ->join('categorias', 'categorias.id = reportes.categoria_id')
-                                          ->where('reportes.id', $id)
-                                          ->first();
+                ->join('usuarios', 'usuarios.id = reportes.user_id')
+                ->join('categorias', 'categorias.id = reportes.categoria_id')
+                ->where('reportes.id', $id)
+                ->first();
 
-            if (!$reporte) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Reporte no encontrado',
-                ])->setStatusCode(404);
+            if (! $reporte) {
+                return $this->fail('Reporte no encontrado', 404);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reporte,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($reporte);
+        });
     }
 
     /**
      * Crear nuevo reporte
-     * POST /reportes
+     * POST /api/reportes
      */
     public function crear()
     {
-        try {
+        return $this->attempt(function () {
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!$this->reporteModel->validate($data)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Validación fallida',
-                    'errors' => $this->reporteModel->errors(),
-                ])->setStatusCode(422);
+            if (! $this->reporteModel->validate($data)) {
+                return $this->fail('Validación fallida', 422, $this->reporteModel->errors());
             }
 
             if ($this->reporteModel->insert($data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Reporte creado exitosamente',
-                ])->setStatusCode(201);
+                return $this->ok(null, 'Reporte creado exitosamente', 201);
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al crear reporte',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al crear reporte', 500);
+        });
     }
 
     /**
      * Actualizar reporte
-     * PUT /reportes/{id}
+     * PUT /api/reportes/{id}
      */
     public function actualizar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->reporteModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Reporte no encontrado',
-                ])->setStatusCode(404);
+            if (! $this->reporteModel->find($id)) {
+                return $this->fail('Reporte no encontrado', 404);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
             if ($this->reporteModel->update($id, $data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Reporte actualizado exitosamente',
-                ]);
+                return $this->ok(null, 'Reporte actualizado exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al actualizar reporte',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al actualizar reporte', 500);
+        });
     }
 
     /**
      * Cambiar estado del reporte
-     * PATCH /reportes/{id}/estado
+     * PATCH /api/reportes/{id}/estado
      */
     public function cambiarEstado($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!isset($data['estado'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Estado requerido',
-                ])->setStatusCode(400);
+            if (! isset($data['estado'])) {
+                return $this->fail('Estado requerido', 400);
             }
 
-            if ($this->reporteModel->cambiarEstado($id, $data['estado'])) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Estado actualizado exitosamente',
-                ]);
+            if ($this->reporteModel->cambiarEstado((int) $id, $data['estado'])) {
+                return $this->ok(null, 'Estado actualizado exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al cambiar estado',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al cambiar estado', 500);
+        });
     }
 
     /**
      * Eliminar reporte (soft delete)
-     * DELETE /reportes/{id}
+     * DELETE /api/reportes/{id}
      */
     public function eliminar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->reporteModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Reporte no encontrado',
-                ])->setStatusCode(404);
+            if (! $this->reporteModel->find($id)) {
+                return $this->fail('Reporte no encontrado', 404);
             }
 
             if ($this->reporteModel->delete($id)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Reporte eliminado exitosamente',
-                ]);
+                return $this->ok(null, 'Reporte eliminado exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al eliminar reporte',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al eliminar reporte', 500);
+        });
     }
 
     /**
      * Obtener reportes por categoría
-     * GET /reportes/categoria/{categoriaId}
+     * GET /api/reportes/categoria/{categoriaId}
      */
     public function porCategoria($categoriaId = null)
     {
-        try {
-            if (!$categoriaId) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de categoría requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($categoriaId) {
+            if (! $categoriaId) {
+                return $this->fail('ID de categoría requerido', 400);
             }
 
             $perPage = $this->request->getVar('perPage') ?? 10;
-            $reportes = $this->reporteModel->getReportesPorCategoria($categoriaId, $perPage);
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reportes,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->reporteModel->getReportesPorCategoria((int) $categoriaId, (int) $perPage));
+        });
     }
 
     /**
      * Obtener reportes por usuario
-     * GET /reportes/usuario/{userId}
+     * GET /api/reportes/usuario/{userId}
      */
     public function porUsuario($userId = null)
     {
-        try {
-            if (!$userId) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($userId) {
+            if (! $userId) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
-            $reportes = $this->reporteModel->getReportesPorUsuario($userId);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reportes,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->reporteModel->getReportesPorUsuario((int) $userId));
+        });
     }
 
     /**
      * Obtener reportes con filtros
-     * POST /reportes/filtro
+     * POST /api/reportes/filtro
      */
     public function filtro()
     {
-        try {
+        return $this->attempt(function () {
             $filtros = $this->request->getJSON(true) ?? $this->request->getPost();
             $perPage = $this->request->getVar('perPage') ?? 10;
 
-            $reportes = $this->reporteModel->getFiltrados($filtros, $perPage);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reportes,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->reporteModel->getFiltrados((array) $filtros, (int) $perPage));
+        });
     }
 
     /**
      * Obtener reportes más votados
-     * GET /reportes/populares/{limit}
+     * GET /api/reportes/populares/{limit}
      */
     public function populares($limit = 5)
     {
-        try {
-            $reportes = $this->reporteModel->getMasVotados((int)$limit);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $reportes,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () use ($limit) {
+            return $this->ok($this->reporteModel->getMasVotados((int) $limit));
+        });
     }
 
     /**
      * Obtener estadísticas de reportes
-     * GET /reportes/estadisticas
+     * GET /api/reportes/estadisticas
      */
     public function estadisticas()
     {
-        try {
-            $stats = $this->reporteModel->getEstadisticas();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $stats,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () {
+            return $this->ok($this->reporteModel->getEstadisticas());
+        });
     }
 }

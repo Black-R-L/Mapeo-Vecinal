@@ -1,0 +1,435 @@
+/* ============================================================
+   Mapeo Vecinal — sistema de diseño propio sobre Bootstrap 5.
+   Bootstrap aporta grid/utilidades; estas reglas son la identidad
+   visual (color, tipografía, componentes) del sitio.
+   ============================================================ */
+
+:root {
+  /* Paleta civica */
+  --color-primary: #1f7a5c;
+  --color-primary-dark: #155b44;
+  --color-primary-light: #e6f3ee;
+  --color-accent: #f2a541;
+
+  --color-text: #1c2321;
+  --color-text-muted: #5b6462;
+  --color-bg: #f7f8f6;
+  --color-surface: #ffffff;
+  --color-border: #e1e5e2;
+
+  /* Estados de reportes/propuestas */
+  --color-estado-nuevo: #2f6fed;
+  --color-estado-progreso: #f2a541;
+  --color-estado-resuelto: #2f9e64;
+  --color-estado-rechazado: #8a8f98;
+  --color-estado-votacion: #2f6fed;
+  --color-estado-aprobada: #2f9e64;
+
+  --radius: 0.6rem;
+  --shadow-sm: 0 1px 2px rgba(28, 35, 33, 0.06), 0 1px 3px rgba(28, 35, 33, 0.08);
+  --shadow-md: 0 4px 10px rgba(28, 35, 33, 0.08), 0 2px 4px rgba(28, 35, 33, 0.06);
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- Base ---------- */
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+a {
+  color: var(--color-primary-dark);
+}
+
+a:hover {
+  color: var(--color-primary);
+}
+
+/* Foco visible siempre — nunca lo removemos, solo lo estilizamos (accesibilidad) */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  z-index: 2000;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ---------- Topbar (sitio público) ---------- */
+.topbar {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar .navbar-brand {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar .nav-link {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.topbar .nav-link.active,
+.topbar .nav-link:hover {
+  color: var(--color-primary-dark);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: #fff;
+  padding: 2.5rem 0;
+  border-radius: 0 0 1.25rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-weight: 700;
+}
+
+.hero p {
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 46rem;
+}
+
+/* ---------- Cards / superficie ---------- */
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+.stat-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-tile .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  line-height: 1.1;
+}
+
+.stat-tile .stat-label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Botones ---------- */
+.btn-brand {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-brand:hover,
+.btn-brand:focus {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: #fff;
+}
+
+.btn-outline-brand {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.btn-outline-brand:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Objetivo táctil mínimo 44x44 en botones de acción sobre mobile */
+.btn {
+  min-height: 2.5rem;
+}
+
+/* ---------- Badges de estado ---------- */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.badge-estado::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge-estado.nuevo { background: var(--color-estado-nuevo); }
+.badge-estado.en_progreso { background: var(--color-estado-progreso); }
+.badge-estado.resuelto { background: var(--color-estado-resuelto); }
+.badge-estado.rechazado,
+.badge-estado.rechazada { background: var(--color-estado-rechazado); }
+.badge-estado.propuesta { background: var(--color-estado-rechazado); }
+.badge-estado.en_votacion { background: var(--color-estado-votacion); }
+.badge-estado.aprobada { background: var(--color-estado-aprobada); }
+
+.categoria-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ---------- Mapa ---------- */
+.map-container {
+  width: 100%;
+  height: 420px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.map-container.map-picker {
+  height: 320px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Pin con icono: el color es refuerzo, el icono es lo que distingue la categoría */
+.mv-marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+/* Recolorear los clusters de Leaflet.markercluster a la paleta de la app */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(31, 122, 92, 0.25);
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---------- Barra de filtros (chips) ---------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter-bar .filter-bar-group {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
+.filter-chip[aria-pressed="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.filter-chip[aria-pressed="false"] {
+  opacity: 0.6;
+}
+
+.filter-chip:hover {
+  border-color: var(--color-primary);
+}
+
+/* ---------- Tablas (panel) ---------- */
+.table-panel thead th {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom-width: 1px;
+}
+
+.table-panel td,
+.table-panel th {
+  vertical-align: middle;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* ---------- Panel administrativo (sidebar) ---------- */
+.panel-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.panel-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 1.25rem 1rem;
+}
+
+.panel-sidebar .brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.panel-sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.15rem;
+  font-weight: 500;
+}
+
+.panel-sidebar .nav-link.active,
+.panel-sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.panel-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.panel-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+/* Toggle de sidebar en mobile */
+.panel-sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .panel-shell {
+    flex-direction: column;
+  }
+
+  .panel-sidebar {
+    width: 100%;
+    display: none;
+  }
+
+  .panel-sidebar.is-open {
+    display: block;
+  }
+
+  .panel-sidebar-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ---------- Progreso de votación ---------- */
+.vote-progress {
+  height: 0.85rem;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+  display: flex;
+}
+
+.vote-progress .a-favor { background: var(--color-estado-resuelto); }
+.vote-progress .en-contra { background: var(--color-estado-rechazado); }
+
+/* ---------- Footer ---------- */
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: 1.5rem 0;
+  margin-top: 3rem;
+  font-size: 0.9rem;
+}
+
+/* Respeta la preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreateCategorias extends Migration
 {
@@ -35,7 +36,7 @@ class CreateCategorias extends Migration
             ],
             'created_at' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
 

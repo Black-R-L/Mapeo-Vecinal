@@ -29,8 +29,11 @@ class ReporteModel extends Model
         'titulo'      => 'required|string|min_length[5]|max_length[150]',
         'descripcion' => 'required|string|min_length[10]|max_length[2000]',
         'estado'      => 'in_list[nuevo,en_progreso,resuelto,rechazado]',
-        'latitud'     => 'numeric|greater_than_equal_to[-90]|less_than_equal_to[90]',
-        'longitud'    => 'numeric|greater_than_equal_to[-180]|less_than_equal_to[180]',
+        // permit_empty: la ubicación es opcional en el formulario público;
+        // sin él, insertar/actualizar con latitud/longitud en null siempre
+        // fallaba la validación ("must contain only numbers").
+        'latitud'     => 'permit_empty|numeric|greater_than_equal_to[-90]|less_than_equal_to[90]',
+        'longitud'    => 'permit_empty|numeric|greater_than_equal_to[-180]|less_than_equal_to[180]',
         'user_id'     => 'required|integer|greater_than[0]',
         'categoria_id' => 'required|integer|greater_than[0]',
     ];
@@ -127,7 +130,7 @@ class ReporteModel extends Model
      */
     public function getFiltrados(array $filtros, int $perPage = 10)
     {
-        $builder = $this->select('reportes.*, usuarios.nombre, usuarios.barrio, categorias.nombre as categoria_nombre, categorias.color')
+        $builder = $this->select('reportes.*, usuarios.nombre, usuarios.barrio, categorias.nombre as categoria_nombre, categorias.color, categorias.icono')
                         ->join('usuarios', 'usuarios.id = reportes.user_id')
                         ->join('categorias', 'categorias.id = reportes.categoria_id');
 
@@ -145,6 +148,25 @@ class ReporteModel extends Model
 
         return $builder->orderBy('reportes.created_at', 'DESC')
                        ->paginate($perPage);
+    }
+
+    /**
+     * Barrios reales (de usuarios.barrio) que tienen al menos un reporte
+     * geolocalizado, con el centroide de sus reportes para poder centrar
+     * el mapa ahí. No inventa una jerarquía geográfica que la app no
+     * tiene: usa el único dato de "zona" que existe de verdad.
+     *
+     * @return array<int, array{barrio: string, total: int, lat: float, lng: float}>
+     */
+    public function getBarriosConReportes(): array
+    {
+        return $this->select('usuarios.barrio, COUNT(*) as total, AVG(reportes.latitud) as lat, AVG(reportes.longitud) as lng')
+                    ->join('usuarios', 'usuarios.id = reportes.user_id')
+                    ->where('reportes.latitud IS NOT NULL')
+                    ->where('reportes.longitud IS NOT NULL')
+                    ->groupBy('usuarios.barrio')
+                    ->orderBy('usuarios.barrio', 'ASC')
+                    ->findAll();
     }
 
     /**

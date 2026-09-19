@@ -2,66 +2,69 @@
 
 namespace App\Filters;
 
+use App\Models\UsuarioModel;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
 /**
  * AuthFilter
- * 
- * Filtro para validar que el usuario esté autenticado
- * Se aplica a rutas protegidas
- * 
+ *
+ * Exige sesión iniciada. Con argumentos (p. ej. 'auth:admin,autoridad')
+ * además exige que el rol del usuario esté en la lista permitida.
+ *
  * @package App\Filters
  */
 class AuthFilter implements FilterInterface
 {
-    /**
-     * Do whatever processing this filter needs to do.
-     * By default it should not change the request or response.
-     *
-     * @param RequestInterface $request
-     * @param ResponseInterface|null $response
-     *
-     * @return RequestInterface|ResponseInterface|string|null
-     */
-    public function before(RequestInterface $request, $response = null)
+    public function before(RequestInterface $request, $arguments = null)
     {
-        // Obtener usuario de sesión
         $usuario = session()->get('usuario');
 
-        if (!$usuario) {
-            // Si es una petición AJAX, devolver JSON
-            if ($request->isAJAX()) {
-                return response()
-                    ->setJSON([
-                        'success' => false,
-                        'message' => 'Usuario no autenticado',
-                    ])
-                    ->setStatusCode(401);
-            }
-
-            // Si es una petición HTTP normal, redirigir a login
-            return redirect()->to('/auth/login');
+        // La sesión trae un usuario, pero puede que ya no exista (o esté
+        // inactivo) en la base: por ejemplo si se lo borró/desactivó
+        // mientras tenía la sesión abierta. Sin esto, cualquier acción que
+        // dependa de ese user_id (votar, crear un reporte) rompe más abajo
+        // con un error de foreign key en vez de pedirle que vuelva a entrar.
+        if ($usuario && ! (new UsuarioModel())->where('estado', 'activo')->find($usuario['id'])) {
+            session()->destroy();
+            $usuario = null;
         }
 
-        // Guardar usuario en $request para usarlo en controladores
+        if (! $usuario) {
+            if ($request->isAJAX()) {
+                return response()->setJSON([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado',
+                ])->setStatusCode(401);
+            }
+
+            session()->setFlashdata('errors', ['auth' => 'Inicia sesión para continuar.']);
+
+            return redirect()->to('/login')->withCookies();
+        }
+
+        $rolesPermitidos = array_filter((array) $arguments);
+
+        if ($rolesPermitidos !== [] && ! in_array($usuario['rol'], $rolesPermitidos, true)) {
+            if ($request->isAJAX()) {
+                return response()->setJSON([
+                    'success' => false,
+                    'message' => 'No tienes permisos para acceder a este recurso',
+                ])->setStatusCode(403);
+            }
+
+            session()->setFlashdata('errors', ['auth' => 'No tienes permisos para acceder a esa sección.']);
+
+            return redirect()->to('/');
+        }
+
         $request->usuario = $usuario;
 
         return $request;
     }
 
-    /**
-     * Allows After filters to inspect and modify the response
-     * object as needed. If this filter returns anything, it
-     * should be the Response object itself.
-     *
-     * @param RequestInterface $request
-     * @param ResponseInterface $response
-     *
-     * @return void
-     */
-    public function after(RequestInterface $request, ResponseInterface $response)
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
         // No-op
     }

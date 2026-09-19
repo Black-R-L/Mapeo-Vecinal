@@ -43,7 +43,7 @@ class PropuestaModel extends Model
      */
     public function getPropuestasConDetalles(int $perPage = 10, int $page = 1, string $estado = '')
     {
-        $builder = $this->select('propuestas.*, usuarios.nombre, usuarios.email, categorias.nombre as categoria_nombre, categorias.color')
+        $builder = $this->select('propuestas.*, usuarios.nombre, usuarios.email, categorias.nombre as categoria_nombre, categorias.color, categorias.icono')
                         ->join('usuarios', 'usuarios.id = propuestas.user_id')
                         ->join('categorias', 'categorias.id = propuestas.categoria_id');
 
@@ -95,7 +95,7 @@ class PropuestaModel extends Model
      */
     public function getMasVotadas(int $limit = 10)
     {
-        return $this->select('propuestas.*, usuarios.nombre, categorias.nombre as categoria_nombre, categorias.color')
+        return $this->select('propuestas.*, usuarios.nombre, categorias.nombre as categoria_nombre, categorias.color, categorias.icono')
                     ->join('usuarios', 'usuarios.id = propuestas.user_id')
                     ->join('categorias', 'categorias.id = propuestas.categoria_id')
                     ->where('propuestas.estado', 'en_votacion')
@@ -130,6 +130,17 @@ class PropuestaModel extends Model
     public function incrementarVotos(int $id)
     {
         return $this->where('id', $id)->increment('votos_totales');
+    }
+
+    /**
+     * Decrementar votos de propuesta (al eliminar un voto a favor)
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function decrementarVotos(int $id)
+    {
+        return $this->where('id', $id)->decrement('votos_totales');
     }
 
     /**

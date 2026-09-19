@@ -372,34 +372,31 @@ Para construcción dinámica de queries
 
 ### Archivo: `app/Config/Routes.php`
 
+Rutas reales, en tres bloques: API bajo `/api`, sitio público (con un subgrupo que exige sesión para las acciones de escritura), y panel bajo `/panel` con el filtro `auth:admin,autoridad` (y `auth:admin` para el subgrupo de usuarios):
+
 ```php
-$routes->group('api', function($routes) {
-    // USUARIOS
+$routes->group('api', function ($routes) {
     $routes->get('usuarios', 'UsuariosController::index');
     $routes->post('usuarios', 'UsuariosController::crear');
-    $routes->get('usuarios/(:num)', 'UsuariosController::obtener/$1');
-    $routes->put('usuarios/(:num)', 'UsuariosController::actualizar/$1');
-    $routes->delete('usuarios/(:num)', 'UsuariosController::eliminar/$1');
-    
-    // REPORTES
-    $routes->get('reportes', 'ReportesController::index');
-    $routes->post('reportes', 'ReportesController::crear');
-    $routes->get('reportes/(:num)', 'ReportesController::obtener/$1');
-    $routes->put('reportes/(:num)', 'ReportesController::actualizar/$1');
-    $routes->patch('reportes/(:num)/estado', 'ReportesController::cambiarEstado/$1');
-    
-    // VOTACIONES
-    $routes->post('votaciones', 'VotacionesController::crear');
-    $routes->put('votaciones/(:num)/(:num)', 'VotacionesController::cambiarVoto/$1/$2');
-    $routes->delete('votaciones/(:num)/(:num)', 'VotacionesController::eliminar/$1/$2');
+    // ...resto del CRUD de usuarios/categorias/reportes/propuestas/votaciones
 });
 
-$routes->group('auth', function($routes) {
-    $routes->post('login', 'AuthController::login');
-    $routes->post('logout', 'AuthController::logout');
-    $routes->post('register', 'AuthController::register');
+$routes->get('login', 'AuthController::login');
+$routes->post('login', 'AuthController::procesarLogin', ['filter' => 'csrf']);
+$routes->get('/', 'SitioController::index');
+
+$routes->post('reportes/nuevo', 'SitioController::crearReporte', ['filter' => ['auth', 'csrf']]);
+$routes->post('propuestas/(:num)/votar', 'SitioController::votar/$1', ['filter' => ['auth', 'csrf']]);
+
+$routes->group('panel', ['filter' => 'auth:admin,autoridad'], static function ($routes) {
+    $routes->group('usuarios', ['filter' => 'auth:admin'], static function ($routes) {
+        // CRUD de usuarios, solo admin
+    });
+    // categorias/reportes/propuestas/votaciones: admin o autoridad
 });
 ```
+
+`AuthFilter::before()` acepta los roles permitidos como argumentos del filtro (`auth:admin,autoridad`); sin argumentos solo exige sesión iniciada.
 
 ---
 

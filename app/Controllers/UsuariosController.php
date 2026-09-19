@@ -3,17 +3,16 @@
 namespace App\Controllers;
 
 use App\Models\UsuarioModel;
-use CodeIgniter\Controller;
 
 /**
  * UsuariosController
- * 
+ *
  * Maneja todas las operaciones CRUD para usuarios
  * Requiere autenticación de admin para crear/editar/eliminar
- * 
+ *
  * @package App\Controllers
  */
-class UsuariosController extends Controller
+class UsuariosController extends BaseApiController
 {
     protected $usuarioModel;
     protected $helpers = ['form', 'url'];
@@ -25,325 +24,200 @@ class UsuariosController extends Controller
 
     /**
      * Listar todos los usuarios con paginación
-     * GET /usuarios
+     * GET /api/usuarios
      */
     public function index()
     {
-        try {
-            $page = $this->request->getVar('page') ?? 1;
-            $perPage = $this->request->getVar('perPage') ?? 10;
+        return $this->attempt(function () {
+            $perPage = (int) ($this->request->getVar('perPage') ?? 10);
             $rol = $this->request->getVar('rol') ?? '';
 
-            $builder = $this->usuarioModel->builder();
+            // paginate() vive en el Model, no en el Builder crudo: encadenar
+            // sobre $this->usuarioModel (no sobre ->builder()) es lo que
+            // permite llamarlo después.
+            // select() explícito: nunca devolver el hash de password en un listado.
+            $this->usuarioModel
+                ->select('id, nombre, email, rol, barrio, estado, created_at, updated_at')
+                ->where('estado', 'activo');
 
             if ($rol) {
-                $builder->where('rol', $rol);
+                $this->usuarioModel->where('rol', $rol);
             }
 
-            $builder->where('estado', 'activo');
-
-            $usuarios = $builder->paginate($perPage);
+            $usuarios = $this->usuarioModel->paginate($perPage);
             $pager = $this->usuarioModel->pager;
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $usuarios,
-                'pagination' => [
-                    'current_page' => $pager->getCurrentPage(),
-                    'total_pages' => $pager->getPageCount(),
-                    'per_page' => $perPage,
-                    'total' => $pager->getDetails()['total'],
-                ],
+            return $this->ok($usuarios, '', 200, [
+                'current_page' => $pager->getCurrentPage(),
+                'total_pages' => $pager->getPageCount(),
+                'per_page' => $perPage,
+                'total' => $pager->getDetails()['total'],
             ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al obtener usuarios: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        });
     }
 
     /**
      * Obtener usuario por ID
-     * GET /usuarios/{id}
+     * GET /api/usuarios/{id}
      */
     public function obtener($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
             $usuario = $this->usuarioModel->find($id);
 
-            if (!$usuario) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado',
-                ])->setStatusCode(404);
+            if (! $usuario) {
+                return $this->fail('Usuario no encontrado', 404);
             }
 
-            // No incluir contraseña
             unset($usuario['password']);
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $usuario,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($usuario);
+        });
     }
 
     /**
      * Crear nuevo usuario
-     * POST /usuarios
+     * POST /api/usuarios
      */
     public function crear()
     {
-        try {
+        return $this->attempt(function () {
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!$this->usuarioModel->validate($data)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Validación fallida',
-                    'errors' => $this->usuarioModel->errors(),
-                ])->setStatusCode(422);
+            if (! $this->usuarioModel->validate($data)) {
+                return $this->fail('Validación fallida', 422, $this->usuarioModel->errors());
             }
 
             $usuarioId = $this->usuarioModel->crearUsuario($data);
 
-            if (!$usuarioId) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Error al crear usuario',
-                ])->setStatusCode(500);
+            if (! $usuarioId) {
+                return $this->fail('Error al crear usuario', 500);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Usuario creado exitosamente',
-                'user_id' => $usuarioId,
-            ])->setStatusCode(201);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok(['user_id' => $usuarioId], 'Usuario creado exitosamente', 201);
+        });
     }
 
     /**
      * Actualizar usuario
-     * PUT /usuarios/{id}
+     * PUT /api/usuarios/{id}
      */
     public function actualizar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
             $usuario = $this->usuarioModel->find($id);
-            if (!$usuario) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado',
-                ])->setStatusCode(404);
+
+            if (! $usuario) {
+                return $this->fail('Usuario no encontrado', 404);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            // No permitir cambio de email (debe ser único)
-            if (isset($data['email']) && $data['email'] !== $usuario['email']) {
-                unset($data['email']);
-            }
-
-            // No permitir cambio de contraseña por este endpoint
-            if (isset($data['password'])) {
-                unset($data['password']);
-            }
+            // No permitir cambio de email ni contraseña por este endpoint
+            unset($data['email'], $data['password']);
 
             if ($this->usuarioModel->update($id, $data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Usuario actualizado exitosamente',
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Error al actualizar usuario',
-                ])->setStatusCode(500);
+                return $this->ok(null, 'Usuario actualizado exitosamente');
             }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+
+            return $this->fail('Error al actualizar usuario', 500);
+        });
     }
 
     /**
      * Cambiar contraseña de usuario
-     * POST /usuarios/{id}/cambiar-password
+     * POST /api/usuarios/{id}/cambiar-password
      */
     public function cambiarPassword($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
             $usuario = $this->usuarioModel->find($id);
-            if (!$usuario) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado',
-                ])->setStatusCode(404);
+
+            if (! $usuario) {
+                return $this->fail('Usuario no encontrado', 404);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!isset($data['password_actual']) || !isset($data['password_nueva'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Contraseña actual y nueva requeridas',
-                ])->setStatusCode(400);
+            if (! isset($data['password_actual'], $data['password_nueva'])) {
+                return $this->fail('Contraseña actual y nueva requeridas', 400);
             }
 
-            // Verificar contraseña actual
-            if (!password_verify($data['password_actual'], $usuario['password'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Contraseña actual incorrecta',
-                ])->setStatusCode(401);
+            if (! password_verify($data['password_actual'], $usuario['password'])) {
+                return $this->fail('Contraseña actual incorrecta', 401);
             }
 
-            if ($this->usuarioModel->cambiarPassword($id, $data['password_nueva'])) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Contraseña actualizada exitosamente',
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Error al cambiar contraseña',
-                ])->setStatusCode(500);
+            if ($this->usuarioModel->cambiarPassword((int) $id, $data['password_nueva'])) {
+                return $this->ok(null, 'Contraseña actualizada exitosamente');
             }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+
+            return $this->fail('Error al cambiar contraseña', 500);
+        });
     }
 
     /**
-     * Desactivar usuario
-     * DELETE /usuarios/{id}
+     * Desactivar usuario (soft delete lógico vía estado)
+     * DELETE /api/usuarios/{id}
      */
     public function eliminar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID de usuario requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID de usuario requerido', 400);
             }
 
-            $usuario = $this->usuarioModel->find($id);
-            if (!$usuario) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado',
-                ])->setStatusCode(404);
+            if (! $this->usuarioModel->find($id)) {
+                return $this->fail('Usuario no encontrado', 404);
             }
 
-            // Usar soft delete (cambiar estado a inactivo)
-            if ($this->usuarioModel->desactivar($id)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Usuario desactivado exitosamente',
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Error al desactivar usuario',
-                ])->setStatusCode(500);
+            if ($this->usuarioModel->desactivar((int) $id)) {
+                return $this->ok(null, 'Usuario desactivado exitosamente');
             }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+
+            return $this->fail('Error al desactivar usuario', 500);
+        });
     }
 
     /**
      * Obtener usuarios por barrio
-     * GET /usuarios/barrio/{barrio}
+     * GET /api/usuarios/barrio/{barrio}
      */
     public function porBarrio($barrio = null)
     {
-        try {
-            if (!$barrio) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Barrio requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($barrio) {
+            if (! $barrio) {
+                return $this->fail('Barrio requerido', 400);
             }
 
-            $usuarios = $this->usuarioModel->getByBarrio($barrio);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $usuarios,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($this->usuarioModel->getByBarrio($barrio));
+        });
     }
 
     /**
      * Obtener estadísticas de usuarios
-     * GET /usuarios/estadisticas
+     * GET /api/usuarios/estadisticas
      */
     public function estadisticas()
     {
-        try {
-            $stats = [
+        return $this->attempt(function () {
+            return $this->ok([
                 'total' => $this->usuarioModel->contarTotal(),
                 'ciudadanos' => $this->usuarioModel->contarPorRol('ciudadano'),
                 'autoridades' => $this->usuarioModel->contarPorRol('autoridad'),
                 'administradores' => $this->usuarioModel->contarPorRol('admin'),
-            ];
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $stats,
             ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        });
     }
 }

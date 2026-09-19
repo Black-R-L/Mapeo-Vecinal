@@ -21,6 +21,10 @@ class VotacionModel extends Model
     protected $allowedFields    = ['user_id', 'propuesta_id', 'tipo_voto'];
     protected $useTimestamps    = true;
     protected $createdField     = 'fecha';
+    // La tabla no tiene updated_at (los votos no se "actualizan", solo se
+    // crean o eliminan). Dejarlo con el valor por defecto rompía todo
+    // insert()/update() con "Unknown column 'updated_at' in field list".
+    protected $updatedField     = '';
 
     protected $validationRules  = [
         'user_id'      => 'required|integer|greater_than[0]',

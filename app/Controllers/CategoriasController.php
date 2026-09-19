@@ -3,17 +3,16 @@
 namespace App\Controllers;
 
 use App\Models\CategoriaModel;
-use CodeIgniter\Controller;
 
 /**
  * CategoriasController
- * 
+ *
  * Maneja CRUD de categorías
  * Requiere autenticación de admin
- * 
+ *
  * @package App\Controllers
  */
-class CategoriasController extends Controller
+class CategoriasController extends BaseApiController
 {
     protected $categoriaModel;
     protected $helpers = ['form'];
@@ -25,196 +24,113 @@ class CategoriasController extends Controller
 
     /**
      * Listar todas las categorías
-     * GET /categorias
+     * GET /api/categorias
      */
     public function index()
     {
-        try {
-            $categorias = $this->categoriaModel->getAllCategorias();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $categorias,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () {
+            return $this->ok($this->categoriaModel->getAllCategorias());
+        });
     }
 
     /**
      * Obtener categoría por ID
-     * GET /categorias/{id}
+     * GET /api/categorias/{id}
      */
     public function obtener($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
             $categoria = $this->categoriaModel->find($id);
 
-            if (!$categoria) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Categoría no encontrada',
-                ])->setStatusCode(404);
+            if (! $categoria) {
+                return $this->fail('Categoría no encontrada', 404);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $categoria,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->ok($categoria);
+        });
     }
 
     /**
      * Crear nueva categoría
-     * POST /categorias
+     * POST /api/categorias
      */
     public function crear()
     {
-        try {
+        return $this->attempt(function () {
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            if (!$this->categoriaModel->validate($data)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Validación fallida',
-                    'errors' => $this->categoriaModel->errors(),
-                ])->setStatusCode(422);
+            if (! $this->categoriaModel->validate($data)) {
+                return $this->fail('Validación fallida', 422, $this->categoriaModel->errors());
             }
 
             if ($this->categoriaModel->insert($data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Categoría creada exitosamente',
-                ])->setStatusCode(201);
+                return $this->ok(null, 'Categoría creada exitosamente', 201);
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al crear categoría',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al crear categoría', 500);
+        });
     }
 
     /**
      * Actualizar categoría
-     * PUT /categorias/{id}
+     * PUT /api/categorias/{id}
      */
     public function actualizar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->categoriaModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Categoría no encontrada',
-                ])->setStatusCode(404);
+            if (! $this->categoriaModel->find($id)) {
+                return $this->fail('Categoría no encontrada', 404);
             }
 
             $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
             if ($this->categoriaModel->update($id, $data)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Categoría actualizada exitosamente',
-                ]);
+                return $this->ok(null, 'Categoría actualizada exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al actualizar categoría',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al actualizar categoría', 500);
+        });
     }
 
     /**
      * Eliminar categoría
-     * DELETE /categorias/{id}
+     * DELETE /api/categorias/{id}
      */
     public function eliminar($id = null)
     {
-        try {
-            if (!$id) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'ID requerido',
-                ])->setStatusCode(400);
+        return $this->attempt(function () use ($id) {
+            if (! $id) {
+                return $this->fail('ID requerido', 400);
             }
 
-            if (!$this->categoriaModel->find($id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Categoría no encontrada',
-                ])->setStatusCode(404);
+            if (! $this->categoriaModel->find($id)) {
+                return $this->fail('Categoría no encontrada', 404);
             }
 
             if ($this->categoriaModel->delete($id)) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Categoría eliminada exitosamente',
-                ]);
+                return $this->ok(null, 'Categoría eliminada exitosamente');
             }
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al eliminar categoría',
-            ])->setStatusCode(500);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+            return $this->fail('Error al eliminar categoría', 500);
+        });
     }
 
     /**
      * Obtener categorías con contador de reportes
-     * GET /categorias/estadisticas/conteo
+     * GET /api/categorias/estadisticas/conteo
      */
     public function conConteo()
     {
-        try {
-            $categorias = $this->categoriaModel->getCategoriasConConteo();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $categorias,
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ])->setStatusCode(500);
-        }
+        return $this->attempt(function () {
+            return $this->ok($this->categoriaModel->getCategoriasConConteo());
+        });
     }
 }

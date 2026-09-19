@@ -2,7 +2,47 @@
   "permissions": {
     "allow": [
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(grep -n 'is_array\\($options\\\\['\\\\''filter'\\\\''\\\\]\\)\\\\|filter'\\\\''\\\\]' vendor/codeigniter4/framework/system/Router/RouteCollection.php)",
+      "Bash(php spark *)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root -e \"DROP DATABASE IF EXISTS mapeo_vecinal; CREATE DATABASE mapeo_vecinal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/)",
+      "Bash(curl -s http://localhost:8080/mapa/datos)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/reportes)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/propuestas)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/registro)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8080/panel)",
+      "Bash(curl -s http://localhost:8080/api/reportes)",
+      "Bash(cd /c/xampp/htdocs/mapeo-vecinal *)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -b /tmp/cookies3.txt http://localhost:8080/propuestas/6 -o /tmp/prop6_after.html)",
+      "Bash(tail -n 40 /tmp/spark_serve.log)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT COUNT\\(*\\) total_votos FROM votaciones; SELECT id,nombre,email FROM usuarios WHERE email='carlos@ejemplo.com'; SELECT id,titulo FROM reportes ORDER BY id DESC LIMIT 3;\")",
+      "Bash(php -r ' *)",
+      "Bash(curl -s http://localhost:8080/debug/voto)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT * FROM votaciones WHERE propuesta_id=6; SELECT votos_totales FROM propuestas WHERE id=6;\")",
+      "Bash(curl -s http://localhost:8080/debug/texto)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT id,titulo,latitud,longitud FROM reportes WHERE id=11; SELECT votos_totales FROM propuestas WHERE id=6; SELECT * FROM votaciones WHERE propuesta_id=6;\")",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT * FROM votaciones WHERE propuesta_id=6;\")",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT id,user_id,titulo FROM reportes WHERE id=11;\")",
+      "Bash(curl -s -b /tmp/c.txt http://localhost:8080/propuestas/6 -o /tmp/p6_final.html)",
+      "Bash(curl -s -b /tmp/c.txt -c /tmp/c2.txt http://localhost:8080/propuestas/6 -o /tmp/p6b.html)",
+      "Bash(xxd /tmp/c.txt)",
+      "Bash(curl -s -b /tmp/c2.txt -c /tmp/c3.txt -D /tmp/hv.txt -o /tmp/voto_body.html --data-urlencode csrf_token_name=__TRACKED_VAR__ --data-urlencode tipo_voto=favor http://localhost:8080/propuestas/6/votar)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root mapeo_vecinal -e \"SELECT votos_totales FROM propuestas WHERE id=6;\")",
+      "Bash(curl -s -b /tmp/c3.txt http://localhost:8080/propuestas/6)",
+      "Bash(grep -o '[a-f0-9]\\\\{10,\\\\}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/votaciones -H 'Content-Type: application/json' -d '{\"user_id\":7,\"propuesta_id\":6,\"tipo_voto\":\"contra\"}')",
+      "Bash(pkill -f \"spark serve\")",
+      "Bash(taskkill //F //IM php.exe)",
+      "Bash(taskkill //F //IM mysqld.exe)",
+      "Bash(rm -f writable/debugbar/*.json && ls writable/debugbar/)",
+      "Bash(grep -n \"baseURL\" .env; echo \"---htaccess---\"; cat public/.htaccess 2>/dev/null | head -20; echo \"---mod_rewrite check via apache conf---\"; grep -n \"AllowOverride\" /c/xampp/apache/conf/httpd.conf 2>/dev/null | head -5)",
+      "Read(//c/xampp/apache/conf/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\xampp\\htdocs\\mapeo-vecinal\\writable\\debugbar"
     ]
   }
 }

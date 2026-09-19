@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreateVotaciones extends Migration
 {
@@ -28,7 +29,7 @@ class CreateVotaciones extends Migration
             ],
             'fecha' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
 

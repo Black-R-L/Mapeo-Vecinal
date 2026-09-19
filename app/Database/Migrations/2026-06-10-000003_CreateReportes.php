@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreateReportes extends Migration
 {
@@ -56,12 +57,11 @@ class CreateReportes extends Migration
             ],
             'created_at' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
             'updated_at' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
-                'on_update' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
             'deleted_at' => [
                 'type'    => 'TIMESTAMP',

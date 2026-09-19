@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreateUsuarios extends Migration
 {
@@ -46,12 +47,11 @@ class CreateUsuarios extends Migration
             ],
             'created_at' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
             'updated_at' => [
                 'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
-                'on_update' => 'CURRENT_TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
             'deleted_at' => [
                 'type'    => 'TIMESTAMP',
@@ -59,8 +59,10 @@ class CreateUsuarios extends Migration
             ],
         ]);
 
+        // 'email' ya es UNIQUE a nivel de campo (arriba); un addKey('email')
+        // adicional generaba un índice duplicado con el mismo nombre y
+        // MySQL rechazaba la migración completa ("Duplicate key name 'email'").
         $this->forge->addKey('id', false, true);
-        $this->forge->addKey('email');
         $this->forge->createTable('usuarios');
     }
 
